@@ -1,0 +1,51 @@
+[project]
+name = "gerrydetect"
+version = "0.1.0"
+description = "FiedlerEnsemble: spectral (Fiedler vector) + Metropolis–Hastings MCMC ensemble outlier detection for partisan gerrymanders on precinct adjacency graphs — NETS 1500 Spring 2026"
+readme = "README.md"
+requires-python = ">=3.11"
+authors = [
+    { name = "Sohum Trivedi" },
+    { name = "Ronit Kapoor" },
+    { name = "Aditi Ghosh" },
+    { name = "Maurya Bonu" },
+]
+dependencies = [
+    "geopandas>=1.0",
+    "shapely>=2.0",
+    "networkx>=3.2",
+    "scipy>=1.11",
+    "numpy>=1.26",
+    "pandas>=2.1",
+    "pyarrow>=14.0",       # parquet I/O
+    "matplotlib>=3.8",
+    "tqdm>=4.66",
+    "requests>=2.31",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.4",
+    "pytest-cov>=4.1",
+    "ruff>=0.5",
+    "jupyter>=1.0",
+]
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+include = ["gerrydetect*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra -q"
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "N", "B", "UP", "RUF"]
+ignore = ["E501"]

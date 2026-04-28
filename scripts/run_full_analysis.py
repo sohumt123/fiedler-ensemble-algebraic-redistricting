@@ -1,0 +1,440 @@
+"""End-to-end analysis for all five focal states.
+
+Generates a realistic synthetic state for each of PA, NC, WI, OH, MD,
+runs multi-chain MCMC, computes all metrics + bootstrap p-values, and
+writes per-state figures and a cross-state summary table.
+
+Why synthetic? Real precinct shapefiles for the focal states require
+authenticated downloads from the Redistricting Data Hub and weigh in
+at hundreds of MB each. The synthetic states are reproducible from
+seed and let the entire pipeline run end-to-end on any laptop. The
+generator is parameterized to match each focal state's district
+count and rough scale (urban centers, partisan gradient) — see
+`gerrydetect.synthetic` for details.
+
+Usage:
+    python scripts/run_full_analysis.py
+"""
+
+from __future__ import annotations
+
+import json
+import logging
+import time
+from pathlib import Path
+
+import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
+
+from gerrydetect.analysis import (
+    bootstrap_p_value,
+    composite_severity_score,
+    outlier_analysis,
+)
+from gerrydetect.diagnostics import effective_sample_size, gelman_rubin
+from gerrydetect.metrics import (
+    all_metrics,
+    cut_edge_ratio,
+    efficiency_gap,
+    mean_median,
+    modularity,
+    mst_diameter,
+    seats_votes_curve,
+)
+from gerrydetect.multichain import run_multichain
+from gerrydetect.partition import Partition
+from gerrydetect.spectral import recursive_bisect
+from gerrydetect.synthetic import make_synthetic_state
+
+REPO_ROOT = Path(__file__).resolve().parent.parent
+FIG_DIR = REPO_ROOT / "output" / "figures"
+TAB_DIR = REPO_ROOT / "output" / "tables"
+META_DIR = REPO_ROOT / "output"
+
+logging.basicConfig(level=logging.INFO, format="%(asctime)s | %(message)s")
+log = logging.getLogger("run_full")
+
+
+# Focal-state configuration. District counts match each state's actual U.S.
+# House delegation post-2020 census. Precinct counts are scaled-down for
+# tractable laptop runtime; the generator approximates shape regardless of
+# scale.
+# Each district gets ~100 precincts so a single-flip move shifts pop by
+# ~1% of district size — well within the population tolerance. This is the
+# practical floor for single-flip MCMC mixing.
+STATE_CONFIG: dict[str, dict] = {
+    "pa": {"name": "Pennsylvania",   "n_districts": 17, "n_precincts": 1700, "urban": 3, "seed": 1},
+    "nc": {"name": "North Carolina", "n_districts": 14, "n_precincts": 1400, "urban": 3, "seed": 2},
+    "wi": {"name": "Wisconsin",      "n_districts": 8,  "n_precincts":  800, "urban": 2, "seed": 3},
+    "oh": {"name": "Ohio",           "n_districts": 15, "n_precincts": 1500, "urban": 3, "seed": 4},
+    "md": {"name": "Maryland",       "n_districts": 8,  "n_precincts":  800, "urban": 2, "seed": 5},
+}
+
+# Sampler parameters. These are uniform across states; per-state tuning
+# could improve mixing but uniform makes results comparable.
+N_CHAINS = 3
+N_STEPS_PER_CHAIN = 300
+LAG = 40
+BURN_IN = 4000
+POP_TOL = 0.06
+
+
+def make_gerrymandered_plan(graph, k: int, target_party: str = "r") -> dict:
+    """Construct a deliberately-biased "enacted" plan: starting from the
+    spectral baseline, swap precincts on the boundary so as to *amplify*
+    `target_party`'s seat share. Each accepted swap moves a high-D-share
+    precinct from a competitive district into one that's already safely D
+    (packing) — this concentrates D voters and gives R more competitive seats
+    elsewhere.
+
+    Returns an assignment dict that is contiguous and population-balanced
+    by construction (we only ever apply flips that pass both checks).
+    """
+    from gerrydetect.contiguity import is_district_connected_after_flip
+    from gerrydetect.partition import MutablePartition
+
+    seed = recursive_bisect(graph, k=k, pop_tol=POP_TOL)
+    P = MutablePartition(graph, seed)
+    rng = np.random.default_rng(0)
+
+    def vote_share_d(dist):
+        d = P.district_votes_d.get(dist, 0)
+        r = P.district_votes_r.get(dist, 0)
+        return d / (d + r) if (d + r) > 0 else 0.5
+
+    ideal_pop = P.total_pop / k
+    pop_lo, pop_hi = ideal_pop * (1 - POP_TOL * 1.5), ideal_pop * (1 + POP_TOL * 1.5)
+
+    # Try ~3000 swap attempts.
+    for _ in range(3000):
+        boundary = list(P.boundary_edges)
+        if not boundary:
+            break
+        edge = boundary[rng.integers(len(boundary))]
+        u, v = tuple(edge)
+        du, dv = P.assignment[u], P.assignment[v]
+        share_du, share_dv = vote_share_d(du), vote_share_d(dv)
+
+        # Pack toward target_party. If target_party='r', we want to move D
+        # voters into the most-D district, leaving R-friendly districts behind.
+        if target_party == "r":
+            # Pick the endpoint whose precinct has higher D-share, move it
+            # toward the more-D-already district.
+            u_dshare = graph.nodes[u]["votes_d"] / max(
+                graph.nodes[u]["votes_d"] + graph.nodes[u]["votes_r"], 1e-9
+            )
+            v_dshare = graph.nodes[v]["votes_d"] / max(
+                graph.nodes[v]["votes_d"] + graph.nodes[v]["votes_r"], 1e-9
+            )
+            if u_dshare > v_dshare and share_dv > share_du:
+                flip_node, target = u, dv
+            elif v_dshare > u_dshare and share_du > share_dv:
+                flip_node, target = v, du
+            else:
+                continue
+        else:  # target_party == 'd' — symmetric
+            u_rshare = 1.0 - graph.nodes[u]["votes_d"] / max(
+                graph.nodes[u]["votes_d"] + graph.nodes[u]["votes_r"], 1e-9
+            )
+            v_rshare = 1.0 - graph.nodes[v]["votes_d"] / max(
+                graph.nodes[v]["votes_d"] + graph.nodes[v]["votes_r"], 1e-9
+            )
+            if u_rshare > v_rshare and share_dv < share_du:
+                flip_node, target = u, dv
+            elif v_rshare > u_rshare and share_du < share_dv:
+                flip_node, target = v, du
+            else:
+                continue
+
+        src = P.assignment[flip_node]
+        node_pop = P.node_pop(flip_node)
+        new_src_pop = P.district_pop[src] - node_pop
+        new_dst_pop = P.district_pop[target] + node_pop
+        if not (pop_lo <= new_src_pop <= pop_hi and pop_lo <= new_dst_pop <= pop_hi):
+            continue
+        if not is_district_connected_after_flip(P, flip_node, target):
+            continue
+        P.flip(flip_node, target)
+
+    return dict(P.assignment)
+
+
+def _safe_hist(ax, values: np.ndarray, bins: int = 24) -> None:
+    """matplotlib's hist throws on a zero-range input. Fall back to a
+    single-bin pseudo-histogram with a clear annotation."""
+    values = np.asarray(values, dtype=float)
+    if values.size == 0:
+        ax.text(0.5, 0.5, "(no samples)", ha="center", va="center", transform=ax.transAxes)
+        return
+    if float(values.std()) == 0.0:
+        v = float(values[0])
+        ax.bar([v], [len(values)], width=max(abs(v) * 0.02, 0.001),
+               color="#a8c5e6", edgecolor="white")
+        ax.text(0.02, 0.95, "(ensemble degenerate)",
+                transform=ax.transAxes, fontsize=8, va="top",
+                bbox=dict(boxstyle="round", facecolor="white", alpha=0.85))
+        return
+    ax.hist(values, bins=bins, color="#a8c5e6", edgecolor="white")
+
+
+def plot_state_choropleth(graph, assignment, ax, title: str):
+    """Scatter the precinct centroids colored by district."""
+    cmap = plt.colormaps["tab20"].resampled(max(assignment.values()) + 1)
+    xs = np.array([graph.nodes[n]["x"] for n in graph.nodes])
+    ys = np.array([graph.nodes[n]["y"] for n in graph.nodes])
+    cs = np.array([cmap(assignment[n]) for n in graph.nodes])
+    ax.scatter(xs, ys, c=cs, s=14, edgecolor="white", linewidth=0.3)
+    ax.set_aspect("equal")
+    ax.set_title(title, fontsize=10)
+    ax.set_xticks([])
+    ax.set_yticks([])
+
+
+def render_state_panel(
+    state_code: str,
+    cfg: dict,
+    graph,
+    enacted_partition: Partition,
+    spectral_partition: Partition,
+    ensemble_metrics: pd.DataFrame,
+    enacted_metrics: dict,
+    out_path: Path,
+):
+    """Per-state 6-panel figure: 3 maps + 3 outlier histograms."""
+    fig = plt.figure(figsize=(13, 7.5))
+    gs = fig.add_gridspec(2, 3, hspace=0.35, wspace=0.20)
+
+    # row 1: maps (enacted, spectral, MCMC sample)
+    ax1 = fig.add_subplot(gs[0, 0])
+    plot_state_choropleth(graph, enacted_partition.assignment, ax1, f"{cfg['name']} — enacted (gerrymandered)")
+    ax2 = fig.add_subplot(gs[0, 1])
+    plot_state_choropleth(graph, spectral_partition.assignment, ax2, f"{cfg['name']} — spectral baseline")
+    # row 2: histograms
+    metric_panels = [
+        ("cut_edge_ratio", "cut edge ratio (lower = more compact)"),
+        ("modularity", "Newman–Girvan modularity"),
+        ("efficiency_gap", "efficiency gap"),
+    ]
+    ax3 = fig.add_subplot(gs[0, 2])
+    metric_name, label = metric_panels[0]
+    values = ensemble_metrics[metric_name].to_numpy()
+    enacted_v = enacted_metrics[metric_name]
+    _safe_hist(ax3, values, bins=24)
+    ax3.axvline(enacted_v, color="#c0392b", linewidth=2, label=f"enacted = {enacted_v:.4f}")
+    ax3.set_title(label, fontsize=10)
+    ax3.set_xlabel(metric_name, fontsize=9)
+    ax3.legend(fontsize=8, loc="upper right")
+
+    for i, (metric_name, label) in enumerate(metric_panels[1:]):
+        ax = fig.add_subplot(gs[1, i])
+        values = ensemble_metrics[metric_name].to_numpy()
+        enacted_v = enacted_metrics[metric_name]
+        _safe_hist(ax, values, bins=24)
+        ax.axvline(enacted_v, color="#c0392b", linewidth=2, label=f"enacted = {enacted_v:.4f}")
+        ax.set_title(label, fontsize=10)
+        ax.set_xlabel(metric_name, fontsize=9)
+        ax.legend(fontsize=8, loc="upper right")
+
+    # The bottom-right panel shows seats-votes overlay.
+    ax_sv = fig.add_subplot(gs[1, 2])
+    enacted_curve = seats_votes_curve(enacted_partition, swing_range=0.2, n_points=41)
+    spectral_curve = seats_votes_curve(spectral_partition, swing_range=0.2, n_points=41)
+    n_seats = enacted_partition.num_districts
+    xs = enacted_curve.statewide_d_share
+    ideal = np.clip(n_seats * (xs - 0.5) + n_seats / 2, 0, n_seats)
+    ax_sv.plot(xs, ideal, color="black", linestyle="--", linewidth=1.2, label="symmetric ideal")
+    ax_sv.plot(spectral_curve.statewide_d_share, spectral_curve.expected_d_seats,
+               color="#2980b9", linewidth=2, label="spectral")
+    ax_sv.plot(enacted_curve.statewide_d_share, enacted_curve.expected_d_seats,
+               color="#c0392b", linewidth=2, label="enacted")
+    ax_sv.set_xlabel("statewide D vote share", fontsize=9)
+    ax_sv.set_ylabel("expected D seats", fontsize=9)
+    ax_sv.set_title("seats–votes", fontsize=10)
+    ax_sv.legend(fontsize=8)
+    ax_sv.grid(True, alpha=0.3)
+
+    fig.suptitle(
+        f"{cfg['name']}: enacted plan vs. {len(ensemble_metrics)}-plan MCMC ensemble (k={cfg['n_districts']})",
+        fontsize=12,
+    )
+    fig.savefig(out_path, dpi=150, bbox_inches="tight")
+    plt.close(fig)
+
+
+def analyze_state(state_code: str, cfg: dict) -> dict:
+    """Run the full pipeline for one state. Returns a dict suitable for
+    inclusion in the cross-state summary table.
+    """
+    log.info("=== %s (%s) ===", state_code.upper(), cfg["name"])
+    rng = np.random.default_rng(cfg["seed"])
+
+    log.info("Generating synthetic state ...")
+    graph = make_synthetic_state(
+        n_precincts=cfg["n_precincts"],
+        n_districts=cfg["n_districts"],
+        seed=cfg["seed"],
+        n_urban_centers=cfg["urban"],
+    )
+
+    log.info("Running spectral bisection (k=%d) ...", cfg["n_districts"])
+    spectral_assign = recursive_bisect(graph, k=cfg["n_districts"], pop_tol=POP_TOL)
+    spectral_partition = Partition(graph, spectral_assign)
+
+    log.info("Constructing biased 'enacted' plan ...")
+    enacted_assign = make_gerrymandered_plan(graph, cfg["n_districts"], target_party="r")
+    enacted_partition = Partition(graph, enacted_assign)
+
+    enacted_metrics = all_metrics(enacted_partition)
+    spectral_metrics = all_metrics(spectral_partition)
+    log.info("  enacted metrics: cut=%.4f mod=%.4f EG=%.4f mm=%.4f",
+             enacted_metrics["cut_edge_ratio"], enacted_metrics["modularity"],
+             enacted_metrics["efficiency_gap"], enacted_metrics["mean_median"])
+
+    log.info("Running %d-chain MCMC (%d × %d steps each) ...", N_CHAINS, N_STEPS_PER_CHAIN, LAG)
+    t0 = time.time()
+    result = run_multichain(
+        graph,
+        seed_assignment=spectral_assign,
+        n_chains=N_CHAINS,
+        n_steps=N_STEPS_PER_CHAIN,
+        lag=LAG,
+        burn_in=BURN_IN,
+        pop_tol=POP_TOL,
+        seeds=[100 + i * 7 for i in range(N_CHAINS)],
+        show_progress=False,
+    )
+    dt = time.time() - t0
+    log.info("  MCMC done in %.1fs", dt)
+    for i, st in enumerate(result.stats):
+        log.info("    chain %d: proposed=%d accepted=%d acc_rate=%.3f",
+                 i, st.proposed, st.accepted, st.acceptance_rate())
+
+    pooled = result.pooled_samples()
+    log.info("  pooled samples: %d", len(pooled))
+
+    # Metric-by-metric ensemble + diagnostics.
+    metric_fns = {
+        "cut_edge_ratio": cut_edge_ratio,
+        "mst_diameter": mst_diameter,
+        "modularity": modularity,
+        "efficiency_gap": efficiency_gap,
+        "mean_median": mean_median,
+    }
+    ensemble_rows = []
+    for p in pooled:
+        ensemble_rows.append({name: fn(p) for name, fn in metric_fns.items()})
+    ensemble_df = pd.DataFrame(ensemble_rows)
+
+    diagnostics_summary = {}
+    for name, fn in metric_fns.items():
+        diagnostics_summary[f"{name}_rhat"] = result.rhat(fn)
+        diagnostics_summary[f"{name}_ess"] = result.effective_sample_size(fn)
+
+    log.info("  R-hat by metric: %s",
+             {k: round(v, 3) for k, v in diagnostics_summary.items() if k.endswith("_rhat")})
+
+    # Outlier analysis with bootstrap CIs.
+    enacted_for_compare = {k: enacted_metrics[k] for k in metric_fns}
+    out_results = outlier_analysis(enacted_for_compare, ensemble_df)
+    rows_out = []
+    for r in out_results:
+        p_pt, p_lo, p_hi = bootstrap_p_value(
+            r.enacted_value,
+            ensemble_df[r.metric].to_numpy(),
+            n_boot=300,
+            seed=cfg["seed"],
+        )
+        rows_out.append({
+            "state": state_code.upper(),
+            "metric": r.metric,
+            "enacted": r.enacted_value,
+            "spectral": spectral_metrics[r.metric],
+            "ensemble_mean": r.ensemble_mean,
+            "ensemble_std": r.ensemble_std,
+            "percentile": r.percentile,
+            "p_value": p_pt,
+            "p_lo_95": p_lo,
+            "p_hi_95": p_hi,
+            "direction": r.direction,
+            "rhat": diagnostics_summary[f"{r.metric}_rhat"],
+            "ess": diagnostics_summary[f"{r.metric}_ess"],
+        })
+
+    severity = composite_severity_score(out_results)
+
+    state_table = pd.DataFrame(rows_out)
+    state_table.to_csv(TAB_DIR / f"{state_code}_summary.csv", index=False)
+    log.info("  composite severity: %.3f", severity)
+
+    # Per-state figure.
+    render_state_panel(
+        state_code,
+        cfg,
+        graph,
+        enacted_partition,
+        spectral_partition,
+        ensemble_df,
+        enacted_metrics,
+        out_path=FIG_DIR / f"{state_code}_panel.png",
+    )
+
+    return {
+        "state": state_code.upper(),
+        "name": cfg["name"],
+        "n_precincts": cfg["n_precincts"],
+        "n_districts": cfg["n_districts"],
+        "n_ensemble": len(pooled),
+        "severity_score": severity,
+        "max_rhat": float(max(v for k, v in diagnostics_summary.items() if k.endswith("_rhat"))),
+        "min_ess": float(min(v for k, v in diagnostics_summary.items() if k.endswith("_ess"))),
+        "enacted_eg": enacted_metrics["efficiency_gap"],
+        "enacted_mm": enacted_metrics["mean_median"],
+        "enacted_cut_ratio": enacted_metrics["cut_edge_ratio"],
+        "enacted_modularity": enacted_metrics["modularity"],
+        "spectral_eg": spectral_metrics["efficiency_gap"],
+        "spectral_cut_ratio": spectral_metrics["cut_edge_ratio"],
+    }, state_table
+
+
+def main() -> int:
+    FIG_DIR.mkdir(parents=True, exist_ok=True)
+    TAB_DIR.mkdir(parents=True, exist_ok=True)
+
+    summary_rows = []
+    per_state_tables = []
+    for code, cfg in STATE_CONFIG.items():
+        row, state_table = analyze_state(code, cfg)
+        summary_rows.append(row)
+        per_state_tables.append(state_table)
+
+    summary = pd.DataFrame(summary_rows).sort_values("severity_score", ascending=False)
+    summary_path = TAB_DIR / "all_states_summary.csv"
+    summary.to_csv(summary_path, index=False)
+    log.info("Wrote cross-state summary to %s", summary_path)
+
+    long_table = pd.concat(per_state_tables, ignore_index=True)
+    long_path = TAB_DIR / "all_states_long.csv"
+    long_table.to_csv(long_path, index=False)
+    log.info("Wrote long-form per-metric table to %s", long_path)
+
+    # Also write a JSON sidecar capturing the run config for the report.
+    run_meta = {
+        "run_timestamp": time.strftime("%Y-%m-%d %H:%M:%S"),
+        "n_chains": N_CHAINS,
+        "n_steps_per_chain": N_STEPS_PER_CHAIN,
+        "lag": LAG,
+        "burn_in": BURN_IN,
+        "pop_tol": POP_TOL,
+        "states": STATE_CONFIG,
+    }
+    with open(META_DIR / "run_config.json", "w") as f:
+        json.dump(run_meta, f, indent=2)
+
+    print("\n=== cross-state summary ===\n")
+    print(summary.to_string(index=False))
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

@@ -1,0 +1,121 @@
+\documentclass[11pt]{article}
+\usepackage[letterpaper, margin=1in]{geometry}
+\usepackage{graphicx}
+\usepackage{amsmath, amssymb}
+\usepackage{booktabs}
+\usepackage{hyperref}
+\usepackage{caption}
+\usepackage{subcaption}
+\usepackage{enumitem}
+\hypersetup{colorlinks=true, linkcolor=blue, urlcolor=blue}
+
+\title{Gerrymandering Detection via Graph Partitioning}
+\author{Sohum Trivedi \and Ronit Kapoor \and Aditi Ghosh \and Maurya Bonu}
+\date{NETS 1500, Spring 2026}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+We model U.S.\ states as adjacency graphs over voting precincts and apply
+graph partitioning algorithms to evaluate whether enacted congressional
+district maps exhibit signs of gerrymandering. By generating large ensembles
+of alternative redistricting plans via spectral bisection and single-flip
+Metropolis MCMC, we compare each enacted plan against algorithmically
+``neutral'' baselines using compactness and partisan-fairness metrics. Our
+analysis treats Pennsylvania as the pilot state and reports per-metric
+$p$-values quantifying how extreme the enacted plan is relative to the
+ensemble.
+\end{abstract}
+
+\section{Introduction}
+% TODO: motivation, summary of approach, what the reader should take away.
+\input{sections/intro}
+
+\section{Background}
+\subsection{Districting as graph partitioning}
+% TODO: graph model, contiguity = connectedness, equal population constraint.
+
+\subsection{Compactness and fairness metrics}
+% TODO: brief defs of cut ratio, MST diameter, modularity, Polsby-Popper, Reock, EG, mean-median.
+
+\section{Methodology}
+\subsection{Graph construction}
+% TODO: data sources, rook adjacency, island stitching, summary stats.
+
+\subsection{Spectral bisection}
+% TODO: Laplacian, Fiedler vector, recursive split with population balance, contiguity repair.
+
+\subsection{Single-flip MCMC}
+% TODO: state space, proposal distribution, acceptance criteria, mixing diagnostics.
+
+\section{Results: Pennsylvania}
+
+\subsection{Graph statistics}
+% Insert from output/tables/pa_summary.csv
+\input{sections/pa_graph_stats}
+
+\subsection{Compactness}
+\begin{figure}[h]
+  \centering
+  \includegraphics[width=0.8\textwidth]{../output/figures/pa_hist_cut_edge_ratio.png}
+  \caption{Cut edge ratio: enacted PA plan vs.\ MCMC ensemble.}
+  \label{fig:pa-cut-ratio}
+\end{figure}
+\begin{figure}[h]
+  \centering
+  \includegraphics[width=0.8\textwidth]{../output/figures/pa_hist_modularity.png}
+  \caption{Newman--Girvan modularity: enacted PA plan vs.\ MCMC ensemble.}
+\end{figure}
+
+\subsection{Partisan fairness}
+\begin{figure}[h]
+  \centering
+  \includegraphics[width=0.8\textwidth]{../output/figures/pa_hist_efficiency_gap.png}
+  \caption{Efficiency gap: enacted PA plan vs.\ MCMC ensemble.}
+\end{figure}
+\begin{figure}[h]
+  \centering
+  \includegraphics[width=0.8\textwidth]{../output/figures/pa_hist_mean_median.png}
+  \caption{Mean--median difference: enacted PA plan vs.\ MCMC ensemble.}
+\end{figure}
+
+\subsection{Map of the enacted plan}
+\begin{figure}[h]
+  \centering
+  \includegraphics[width=0.7\textwidth]{../output/figures/pa_enacted_map.png}
+  \caption{Pennsylvania congressional districts (Act 2022-19).}
+\end{figure}
+
+\subsection{Outlier summary}
+% TODO: include final p-value table from output/tables/pa_summary.csv.
+
+\section{Comparison across states}
+% TODO: replicate for NC, WI, OH, MD; rank by composite severity score.
+
+\section{Limitations}
+\paragraph{Mixing.} Single-flip MCMC is known to mix slowly relative to
+recombination samplers; our results are conditional on the region of plan
+space the chain explored within budget.
+
+\paragraph{Single seed plan.} We seed each chain from spectral bisection;
+running multiple chains from independent seeds would give stronger evidence
+of mixing.
+
+\paragraph{Population data.} ACS 5-year estimates introduce sampling error
+at the precinct level.
+
+\section{Concepts used}
+\paragraph{Graph algorithms.} Spectral partitioning via Laplacian
+eigenvectors, BFS for contiguity, Kruskal's algorithm for minimum spanning
+trees, two-BFS tree diameter, Newman-Girvan modularity.
+
+\paragraph{Social networks.} Precinct adjacency forms a spatial network with
+community structure; gerrymandering is the strategic distortion of community
+boundaries.
+
+\paragraph{Game theory.} The efficiency gap and mean-median formalize
+``wasted votes,'' connecting to the design of voting rules robust to
+strategic manipulation.
+
+\end{document}
