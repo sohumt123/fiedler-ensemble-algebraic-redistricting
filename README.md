@@ -3,6 +3,7 @@
 
 Sohum Trivedi · Ronit Kapoor · Aditi Ghosh · Maurya Bonu
 
+-----------------------------------------------------------------------------
 Recursive spectral bisection via the **Fiedler vector** (the eigenvector of
 the second-smallest Laplacian eigenvalue) gives the deterministic baseline
 plan; a single-flip **Metropolis–Hastings MCMC** sampler over precinct
