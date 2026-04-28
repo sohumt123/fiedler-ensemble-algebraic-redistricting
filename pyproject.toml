@@ -1,7 +1,7 @@
 [project]
-name = "gerrydetect"
+name = "fiedler-ensemble"
 version = "0.1.0"
-description = "FiedlerEnsemble: spectral (Fiedler vector) + Metropolis–Hastings MCMC ensemble outlier detection for partisan gerrymanders on precinct adjacency graphs — NETS 1500 Spring 2026"
+description = "FiedlerEnsemble — algebraic redistricting + MCMC outlier detection (NETS 1500 Spring 2026)"
 readme = "README.md"
 requires-python = ">=3.11"
 authors = [

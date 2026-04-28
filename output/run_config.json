@@ -1,0 +1,45 @@
+{
+  "run_timestamp": "2026-04-28 13:01:05",
+  "n_chains": 3,
+  "n_steps_per_chain": 300,
+  "lag": 40,
+  "burn_in": 4000,
+  "pop_tol": 0.06,
+  "states": {
+    "pa": {
+      "name": "Pennsylvania",
+      "n_districts": 17,
+      "n_precincts": 1700,
+      "urban": 3,
+      "seed": 1
+    },
+    "nc": {
+      "name": "North Carolina",
+      "n_districts": 14,
+      "n_precincts": 1400,
+      "urban": 3,
+      "seed": 2
+    },
+    "wi": {
+      "name": "Wisconsin",
+      "n_districts": 8,
+      "n_precincts": 800,
+      "urban": 2,
+      "seed": 3
+    },
+    "oh": {
+      "name": "Ohio",
+      "n_districts": 15,
+      "n_precincts": 1500,
+      "urban": 3,
+      "seed": 4
+    },
+    "md": {
+      "name": "Maryland",
+      "n_districts": 8,
+      "n_precincts": 800,
+      "urban": 2,
+      "seed": 5
+    }
+  }
+}

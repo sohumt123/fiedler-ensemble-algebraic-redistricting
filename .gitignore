@@ -50,3 +50,9 @@ report/*.fdb_latexmk
 .vscode/
 .idea/
 *.swp
+
+# Claude / AI assistant scratch — never commit
+CLAUDE.md
+.claude/
+.cursor/
+.aider*

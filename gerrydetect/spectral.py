@@ -97,21 +97,26 @@ def fiedler_vector(graph: nx.Graph, nodes: list[NodeId] | None = None) -> np.nda
 def _balanced_split_indices(
     fiedler: np.ndarray,
     populations: np.ndarray,
-    pop_tol: float,
+    target_left_fraction: float = 0.5,
 ) -> np.ndarray:
-    """Given a sorted-by-Fiedler-value population array, find the cut index
-    that produces the most-balanced split. Returns the boolean mask telling
-    which nodes go in the "low" half.
+    """Find the Fiedler-ordered cut index that puts approximately
+    `target_left_fraction` of the population in the "low" half.
+
+    Returns the boolean mask telling which nodes go in the "low" half.
+
+    Using a fraction instead of always 50/50 lets recursive bisection
+    handle non-power-of-2 district counts cleanly: when we still need to
+    create `k_total` districts from this piece and the left subtree will
+    become `k_left` of them, the cut should put `k_left/k_total` of the
+    population on the left.
     """
     order = np.argsort(fiedler)
     sorted_pop = populations[order]
     cumulative = np.cumsum(sorted_pop)
     total = cumulative[-1]
 
-    # Find cut closest to total/2.
-    target = total / 2.0
+    target = total * target_left_fraction
     cut_idx = int(np.argmin(np.abs(cumulative - target)))
-    # Guard against degenerate cuts at the ends.
     cut_idx = min(max(cut_idx, 1), len(fiedler) - 2)
 
     mask = np.zeros(len(fiedler), dtype=bool)
@@ -165,48 +170,41 @@ def recursive_bisect(
 ) -> dict[NodeId, int]:
     """Recursively bisect `graph` into k population-balanced pieces.
 
+    The recursion is *proportional*: at each level we know the piece will
+    become `k_target` districts, so we split it into a "left" piece destined
+    to become `k_left = k_target // 2` districts and a "right" piece destined
+    to become `k_right = k_target - k_left`. The Fiedler-ordered cut puts
+    `k_left / k_target` of the population on the left. This works cleanly
+    for any k, not just powers of 2.
+
     Returns a dict mapping node -> district id in [0, k).
     """
     if k <= 0:
         raise ValueError("k must be positive")
 
-    # We carry around assignments as labels; recursion splits one label into
-    # two new labels until we have k.
-    assignment: dict[NodeId, int] = {n: 0 for n in graph.nodes}
-    next_label = 1
-
-    # Each iteration: pick the label with the largest total population and
-    # split it. Repeat until we have k labels.
     populations = {n: float(graph.nodes[n].get("pop", 1.0)) for n in graph.nodes}
 
-    while len(set(assignment.values())) < k:
-        # Pick the heaviest district to split next.
-        dist_pops: dict[int, float] = {}
-        for n, d in assignment.items():
-            dist_pops[d] = dist_pops.get(d, 0.0) + populations[n]
-        target_label = max(dist_pops, key=dist_pops.get)
+    def split(nodes: list[NodeId], k_target: int, label_base: int) -> dict[NodeId, int]:
+        if k_target == 1 or len(nodes) <= 1:
+            return {n: label_base for n in nodes}
+        k_left = k_target // 2
+        k_right = k_target - k_left
 
-        nodes_in = [n for n, d in assignment.items() if d == target_label]
-        if len(nodes_in) < 2:
-            log.warning("Cannot split label %s: only %d nodes", target_label, len(nodes_in))
-            break
+        fiedler = fiedler_vector(graph, nodes)
+        pop_array = np.array([populations[n] for n in nodes])
+        target_frac = k_left / k_target
+        low_mask = _balanced_split_indices(fiedler, pop_array, target_frac)
 
-        fiedler = fiedler_vector(graph, nodes_in)
-        pop_array = np.array([populations[n] for n in nodes_in])
-        low_mask = _balanced_split_indices(fiedler, pop_array, pop_tol)
+        left_nodes = [nodes[i] for i in range(len(nodes)) if low_mask[i]]
+        right_nodes = [nodes[i] for i in range(len(nodes)) if not low_mask[i]]
 
-        for i, n in enumerate(nodes_in):
-            if not low_mask[i]:
-                assignment[n] = next_label
-        next_label += 1
+        left = split(left_nodes, k_left, label_base)
+        right = split(right_nodes, k_right, label_base + k_left)
+        return {**left, **right}
 
-    # Renumber to 0..k-1 contiguous, then repair contiguity.
-    labels = sorted(set(assignment.values()))
-    renumber = {old: new for new, old in enumerate(labels)}
-    assignment = {n: renumber[d] for n, d in assignment.items()}
+    assignment = split(list(graph.nodes), k, 0)
     assignment = _repair_contiguity(graph, assignment)
 
-    # Verify connectedness post-repair (a soft check; logs only).
     by_district: dict[int, list[NodeId]] = {}
     for n, d in assignment.items():
         by_district.setdefault(d, []).append(n)
