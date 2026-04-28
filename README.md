@@ -215,7 +215,6 @@ docs/figures/       # README figures (committed)
 - **Maurya** — visualization, report writing, presentation
 
 ## License
-
 All datasets used are public-domain or permissively licensed (Census Bureau
 TIGER/Line, Redistricting Data Hub VEST, MIT Election Data + Science Lab,
 American Community Survey). Attributions in the final report.
