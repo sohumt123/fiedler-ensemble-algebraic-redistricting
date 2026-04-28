@@ -1,6 +1,6 @@
 # FiedlerEnsemble: Algebraic Redistricting & MCMC Outlier Detection
 
-NETS 1500 final project, Spring 2026.
+
 Sohum Trivedi · Ronit Kapoor · Aditi Ghosh · Maurya Bonu
 
 We model U.S. states as precinct adjacency graphs and apply two complementary
