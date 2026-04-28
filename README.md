@@ -1,5 +1,6 @@
 # FiedlerEnsemble — Algebraic Redistricting + MCMC Outlier Detection
 
+
 Sohum Trivedi · Ronit Kapoor · Aditi Ghosh · Maurya Bonu
 
 Recursive spectral bisection via the **Fiedler vector** (the eigenvector of
