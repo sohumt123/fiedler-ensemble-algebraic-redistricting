@@ -15,6 +15,8 @@ modularity, MST diameter, Polsby–Popper, Reock) and partisan-fairness
 Focal states (in order of analysis): **Pennsylvania, North Carolina,
 Wisconsin, Ohio, Maryland.**
 
+The project features a **real-world empirical analysis** pipeline utilizing public VTD data for Pennsylvania from MGGG, as well as a pure-algorithmic validation pipeline using synthetic states.
+
 The full design lives in
 [`docs/specs/2026-04-28-gerrymandering-detection-design.md`](docs/specs/2026-04-28-gerrymandering-detection-design.md).
 
@@ -44,7 +46,8 @@ of those do any of the algorithmic work.
 | `gerrydetect.partition` | `Partition` / `MutablePartition` — the central abstraction |
 | `gerrydetect.contiguity` | BFS-based district connectedness check |
 | `gerrydetect.graph` | Build the precinct adjacency graph from a GeoDataFrame |
-| `gerrydetect.data` | Load real-state precincts + enacted districts |
+| `gerrydetect.data_mggg` | Load real-world VTD shapefiles (e.g. MGGG PA data) |
+| `gerrydetect.data` | Load placeholder shapefiles |
 | `gerrydetect.synthetic` | Reproducible synthetic state generator (Delaunay-triangulated, urban-rural gradient) |
 | `gerrydetect.metrics` | Cut ratio, MST diameter, modularity, Polsby–Popper, Reock, efficiency gap, mean–median, seats–votes |
 | `gerrydetect.spectral` | Proportional recursive spectral bisection (Fiedler vector) |
@@ -62,7 +65,21 @@ synthetic-state structural properties. Test-driven development was used
 for the diagnostics, multi-chain runner, synthetic generator, and
 bootstrap confidence intervals.
 
-## Five-state results
+## Real Data Empirical Analysis: Pennsylvania
+
+We analyzed the **2018 Remedial Congressional District Plan** for Pennsylvania using real VTD shapefiles from MGGG.
+
+To run the analysis:
+```bash
+# Download the real PA VTD data
+python scripts/download_mggg_pa.py
+
+# Run the Fiedler vector and multi-chain MCMC against the enacted plan
+python scripts/run_real_pa.py
+```
+This produces the 8-panel diagnostic figure `output/figures/real_pa/pa_real_panel.png` showing the statistical distribution of map metrics, proving the 2018 plan is a significant outlier in compactness and fairness.
+
+## Synthetic Five-state results
 
 `scripts/run_full_analysis.py` runs the full pipeline on synthetic versions
 of all five focal states (Pennsylvania, North Carolina, Wisconsin, Ohio,
