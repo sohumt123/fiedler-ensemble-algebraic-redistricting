@@ -407,8 +407,8 @@ corroborates this, though at marginal significance.}
   \centering
   \includegraphics[width=0.95\textwidth]{real_nc/nc_real_panel}
   \caption{North Carolina ($k = 13$, real MGGG VTDs, 900-plan
-    ensemble). The 2016 enacted map was later challenged for partisan
-    gerrymandering.}
+    ensemble, 5 metrics including MST diameter). The 2016 enacted map was
+    later challenged for partisan gerrymandering.}
   \label{fig:nc}
 \end{figure}
 
@@ -418,12 +418,21 @@ seats. The map was challenged in court and eventually redrawn.
 
 Our ensemble analysis (cut-edge ratio: enacted 0.082 vs.\ spectral 0.068;
 efficiency gap: enacted $-0.054$ vs.\ ensemble mean near 0) shows the
-enacted map as an outlier on both compactness and fairness. The enacted
-map draws boundaries through more community-separating edges than a
-neutral random map, and wastes more Democratic votes than Republican
-ones. Composite severity: \textbf{2.30}.
-\textbf{Conclusion: our method flags NC's enacted map as a statistical
-outlier consistent with a Republican-favoring partisan gerrymander.}
+enacted map as an outlier on compactness and, directionally, on partisan
+fairness. The enacted map draws boundaries through fewer community-separating
+edges than a typical random map.
+
+We additionally measured \textbf{MST diameter}: the enacted map scores
+20.15 vs.\ an ensemble mean of 26.64 ($\sigma = 2.35$), placing it at the
+0.6th percentile ($p = 0.007$). North Carolina's districts are
+significantly more compact than a neutral random redistricting on this
+graph-theoretic measure---consistent with the compactness story but not
+with the typical narrative of a gerrymandered map that looks oddly shaped.
+Composite severity: \textbf{2.28}.
+\textbf{Conclusion: our method flags NC's enacted map as a compactness
+outlier (compact in shape, extreme on MST diameter) but the partisan
+metrics do not reach significance, limiting our confidence in a partisan
+verdict.}
 
 \subsection{Maryland: The Other Side of the Coin}
 \label{sec:md}
@@ -431,9 +440,9 @@ outlier consistent with a Republican-favoring partisan gerrymander.}
 \begin{figure}[h]
   \centering
   \includegraphics[width=0.95\textwidth]{real_md/md_real_panel}
-  \caption{Maryland ($k = 8$, real MGGG VTDs, 900-plan ensemble).
-    Maryland's 2011 map is considered one of the most aggressive
-    Democratic gerrymanders in the country.}
+  \caption{Maryland ($k = 8$, real MGGG VTDs, 900-plan ensemble,
+    5 metrics including MST diameter). Maryland's 2011 map is considered
+    one of the most aggressive Democratic gerrymanders in the country.}
   \label{fig:md}
 \end{figure}
 
@@ -447,8 +456,15 @@ Our analysis detects this clearly. Maryland's enacted efficiency gap
 is $+0.200$---strongly positive (Democratic-favoring)---and the cut-edge
 ratio (0.189) is far above the spectral baseline (0.068), indicating
 messy, non-compact district shapes. With only 8 districts, even a small
-manipulation produces a large partisan effect. Composite severity:
-\textbf{1.74}.
+manipulation produces a large partisan effect.
+
+We additionally measured \textbf{MST diameter}: the enacted map scores
+22.50 vs.\ an ensemble mean of 27.71 ($\sigma = 1.56$), placing it at the
+0th percentile ($p < 0.001$). Despite its infamous ``tentacle-like'' 6th
+Congressional District, Maryland's districts are significantly more compact
+than a neutral random redistricting on graph-theoretic diameter---the
+overall district network is tighter than random even as individual shapes
+look irregular. Composite severity: \textbf{2.19}.
 \textbf{Conclusion: our method correctly identifies Maryland as a
 Democratic gerrymander, demonstrating the method is not partisan---it
 detects manipulation regardless of which party did it.}
@@ -459,9 +475,9 @@ detects manipulation regardless of which party did it.}
 \begin{figure}[h]
   \centering
   \includegraphics[width=0.95\textwidth]{real_wi/wi_real_panel}
-  \caption{Wisconsin ($k = 8$, real MGGG VTDs, 900-plan ensemble).
-    Wisconsin's 2011 map was the subject of \textit{Gill v.\ Whitford}
-    (2018).}
+  \caption{Wisconsin ($k = 8$, real MGGG VTDs, 900-plan ensemble,
+    5 metrics including MST diameter). Wisconsin's 2011 map was the subject
+    of \textit{Gill v.\ Whitford} (2018).}
   \label{fig:wi}
 \end{figure}
 
@@ -478,7 +494,14 @@ confirms this---the spectral baseline itself produces $\mathrm{EG} =
 manipulation. But the enacted map achieves $\mathrm{EG} = -0.246$,
 a large \emph{Democratic} swing relative to the spectral baseline,
 and a cut-edge ratio (0.042) below even the spectral plan (0.036),
-placing it deep in the ensemble tails. Composite severity: \textbf{4.00}.
+placing it deep in the ensemble tails.
+
+We additionally measured \textbf{MST diameter}: the enacted map scores
+31.50 vs.\ an ensemble mean of 35.40 ($\sigma = 2.30$), placing it at the
+3.6th percentile ($p = 0.074$). Like PA, Wisconsin's districts are
+directionally more compact on this measure, but the result falls just
+outside conventional significance. The partisan metrics remain overwhelming.
+Composite severity: \textbf{3.43}.
 \textbf{Conclusion: Wisconsin's high severity score reflects a map that
 is a statistical outlier even after accounting for the state's natural
 geographic partisan lean.}
@@ -491,35 +514,36 @@ geographic partisan lean.}
   \toprule
   State & $k$ & severity score & enacted EG & enacted cut ratio & metrics \\
   \midrule
-  Pennsylvania   & 18 & 3.40$^*$ & $-0.026$ & 0.055 & 5 (incl.\ MST) \\
-  Wisconsin      & 8  & 4.00     & $-0.246$ & 0.042 & 4 \\
-  North Carolina & 13 & 2.30     & $-0.054$ & 0.082 & 4 \\
-  Maryland       & 8  & 1.74     & $+0.200$ & 0.189 & 4 \\
+  Wisconsin      & 8  & 3.43 & $-0.246$ & 0.042 & 5 (incl.\ MST) \\
+  Pennsylvania   & 18 & 3.40 & $-0.026$ & 0.055 & 5 (incl.\ MST) \\
+  North Carolina & 13 & 2.28 & $-0.054$ & 0.082 & 5 (incl.\ MST) \\
+  Maryland       & 8  & 2.19 & $+0.200$ & 0.189 & 5 (incl.\ MST) \\
   \bottomrule
   \end{tabular}
   \caption{Cross-state composite severity ranking (real MGGG data, 900-plan
-    ensembles). Severity is the average of $-\log_{10}(p)$ across metrics;
+    ensembles, all states re-run with 5 metrics including MST diameter).
+    Severity is the average of $-\log_{10}(p)$ across metrics;
     higher = more extreme outlier. EG sign: negative = more Democratic waste
     (Republican-favoring map), positive = more Republican waste
-    (Democratic-favoring map). $^*$Pennsylvania re-run with MST diameter as
-    a 5th metric; the lower severity vs.\ Wisconsin reflects that MST
-    ($p = 0.096$) is not significant, diluting the average.}
+    (Democratic-favoring map).}
   \label{tab:cross}
 \end{table}
 
-Wisconsin (4.00) is the most extreme outlier in our sample: all four metrics
-are significant at $p < 0.001$, placing the enacted map deep in the tail of
-the ensemble in every dimension simultaneously. Pennsylvania (3.40 across 5
-metrics) is also a strong outlier, but in the \emph{good} direction---the
-court-ordered map is significantly more compact and fairer than chance.
-The MST diameter metric is directionally consistent ($p = 0.096$, 2.8th
-percentile) but falls just outside conventional significance.
+All four states were re-run with 5 metrics (including MST diameter).
+Wisconsin (3.43) and Pennsylvania (3.40) are the strongest outliers---within
+a rounding error of each other. For Wisconsin, all partisan metrics remain
+at $p < 0.001$; MST is directionally compact ($p = 0.074$) but just misses
+significance, pulling the severity down from the naive 4-metric estimate.
+Pennsylvania's map is a strong outlier in the \emph{good} direction across
+all 5 metrics.
 
-North Carolina (2.30) and Maryland (1.74) rank lower not because their
-maps are less manipulated, but because their smaller VTD counts and
-district configurations produce less statistical power---the ensemble
-distributions are wider, so even extreme enacted values don't push as
-far into the tails.
+North Carolina (2.28) and Maryland (2.19) rank lower. MST diameter is
+significant for both ($p = 0.007$ and $p < 0.001$, respectively)---both
+enacted maps are more compact on graph-theoretic diameter than a neutral
+random redistricting. For Maryland this is striking: the map is
+shape-compact despite its notoriety, but the partisan manipulation is
+severe. For North Carolina, compactness (including MST) is the dominant
+signal; partisan metrics do not reach significance.
 
 The key insight: \emph{no single metric is decisive}. The strength of
 the ensemble test is that it asks whether a map is extreme on multiple
@@ -598,10 +622,13 @@ Here is what the data actually says, state by state.
 
 \paragraph{Wisconsin: Gerrymandered (strongest evidence).}
 Wisconsin's 2011 Republican-drawn map is a statistical outlier on
-\emph{every single metric}---compactness, modularity, efficiency gap,
-and mean--median---all at $p < 0.001$. That means out of 900 randomly
-drawn maps, not one comes close to matching the enacted map's combination
-of compact shape and extreme partisan skew.
+\emph{every partisan metric}---efficiency gap and mean--median---both
+at $p < 0.001$. Compactness metrics (cut-edge ratio, modularity) also
+reach $p < 0.001$. The MST diameter sits at the 3.6th percentile
+($p = 0.074$), directionally compact but just outside significance.
+That means out of 900 randomly drawn maps, not one comes close to
+matching the enacted map's combination of compact shape and extreme
+partisan skew.
 
 The most telling number is the efficiency gap swing: a neutral map of
 Wisconsin (spectral baseline) produces $\mathrm{EG} = +0.012$, reflecting
@@ -618,7 +645,10 @@ map's extreme nature but declined to rule on the merits.
 Maryland's 2011 Democratic-drawn map has a cut-edge ratio of 0.189 and
 modularity of 0.682. These compactness numbers are not statistically
 unusual---$p = 0.429$ and $p = 0.450$, both well within normal range.
-The districts do not look bizarrely shaped on a map.
+The districts do not look bizarrely shaped on a map. And the MST diameter
+(22.50, 0th percentile, $p < 0.001$) is actually significantly
+\emph{more compact} than a random redistricting---the district network
+is geometrically tight even as individual shapes look irregular.
 
 But look at the partisan numbers: efficiency gap $= +0.200$ ($p < 0.001$)
 and mean--median $= -0.013$ ($p = 0.006$). Both are highly significant.
@@ -634,12 +664,15 @@ metrics. \textbf{Our verdict: gerrymandered} (Democratic partisan
 gerrymander, confirmed by partisan metrics alone).
 
 \paragraph{North Carolina: Detected as unusual, but mostly on compactness.}
-North Carolina's 2016 congressional map scores 2.30 on our severity
+North Carolina's 2016 congressional map scores 2.28 on our severity
 index and is flagged as a compactness outlier---but in the \emph{good}
 direction. The enacted map's cut-edge ratio (0.082) sits at the 0th
 percentile of the ensemble (mean 0.214), meaning it is \emph{more
-compact} than all 900 randomly drawn plans. This is counterintuitive:
-a famously gerrymandered state whose enacted map looks compact?
+compact} than all 900 randomly drawn plans. The MST diameter (20.15)
+reinforces this: at the 0.6th percentile ($p = 0.007$), the districts
+are significantly tighter on graph-theoretic diameter than a neutral map.
+This is counterintuitive: a famously gerrymandered state whose enacted
+map is \emph{more compact} than random chance?
 
 The partisan metrics do not reach significance: efficiency gap
 $p = 0.283$, mean--median $p = 0.222$. This does not mean the map is
@@ -648,13 +681,14 @@ power to isolate the partisan manipulation from natural geographic
 variation given North Carolina's competitive two-party split. North
 Carolina demonstrates a key limitation: \emph{ensemble methods need
 large enough samples and the right baseline to detect every form of
-manipulation}. \textbf{Our verdict: evidence of manipulation, but
-not conclusively confirmed by our partisan metrics alone.}
+manipulation}. \textbf{Our verdict: evidence of compactness manipulation
+(districts more compact than chance), but partisan gerrymandering not
+conclusively confirmed by our metrics alone.}
 
 \paragraph{Pennsylvania: The Control Case---What a Fair Map Looks Like.}
 Pennsylvania's 2018 remedial map, drawn by a court-appointed special
-master with fairness as an explicit goal, scores 4.00---the maximum
-in our sample. But unlike Wisconsin, it is not an outlier in a bad way.
+master with fairness as an explicit goal, scores 3.40 on our 5-metric
+severity index. But unlike Wisconsin, it is not an outlier in a bad way.
 
 The enacted map's cut-edge ratio (0.055) is lower than all 900 random
 plans (ensemble mean 0.116). Its efficiency gap ($-0.026$) is far closer
