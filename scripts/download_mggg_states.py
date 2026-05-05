@@ -1,14 +1,4 @@
-"""Download MGGG state shapefiles (public GitHub repos, no login required).
-
-All data is MIT-licensed and hosted at https://github.com/mggg-states.
-
-Usage:
-    python scripts/download_mggg_states.py pa       # Pennsylvania only
-    python scripts/download_mggg_states.py nc       # North Carolina
-    python scripts/download_mggg_states.py md       # Maryland
-    python scripts/download_mggg_states.py wi       # Wisconsin
-    python scripts/download_mggg_states.py all      # all four states
-"""
+"""Download MGGG state shapefiles (PA/NC/MD/WI). Usage: python scripts/download_mggg_states.py all"""
 
 from __future__ import annotations
 

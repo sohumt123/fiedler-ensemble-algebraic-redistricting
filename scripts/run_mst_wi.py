@@ -1,12 +1,4 @@
-"""Run the full WI analysis with mst_diameter included in the ensemble.
-
-Usage:
-    python scripts/run_mst_wi.py
-
-Outputs:
-    docs/figures/real_wi/wi_real_panel.png   (updated, MST in summary table)
-    output/tables/wi_real_long.csv           (5 metrics, including mst_diameter)
-"""
+"""WI analysis with 5 metrics including MST diameter. Usage: python scripts/run_mst_wi.py"""
 
 from __future__ import annotations
 

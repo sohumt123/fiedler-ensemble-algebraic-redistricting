@@ -1,20 +1,4 @@
-"""End-to-end analysis for all five focal states.
-
-Generates a realistic synthetic state for each of PA, NC, WI, OH, MD,
-runs multi-chain MCMC, computes all metrics + bootstrap p-values, and
-writes per-state figures and a cross-state summary table.
-
-Why synthetic? Real precinct shapefiles for the focal states require
-authenticated downloads from the Redistricting Data Hub and weigh in
-at hundreds of MB each. The synthetic states are reproducible from
-seed and let the entire pipeline run end-to-end on any laptop. The
-generator is parameterized to match each focal state's district
-count and rough scale (urban centers, partisan gradient) — see
-`gerrydetect.synthetic` for details.
-
-Usage:
-    python scripts/run_full_analysis.py
-"""
+"""End-to-end pipeline on synthetic states. Usage: python scripts/run_full_analysis.py"""
 
 from __future__ import annotations
 

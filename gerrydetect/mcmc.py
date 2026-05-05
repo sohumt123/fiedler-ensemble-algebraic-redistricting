@@ -1,20 +1,4 @@
-"""Single-flip Metropolis MCMC over the space of valid redistricting plans.
-
-Following the proposal: at each step we sample a boundary edge uniformly at
-random and propose flipping the smaller-population endpoint into the
-larger-population district. The proposal is accepted iff:
-1. it preserves contiguity (the source district stays connected without the
-   flipped node), and
-2. it preserves population balance (no district drifts farther than `pop_tol`
-   from the ideal population).
-
-After a burn-in period we record a `Partition` snapshot every `lag` steps.
-
-This is the canonical "flip step" sampler; it is known to mix slowly compared
-to recombination moves but is conceptually clean (each move is a single
-swap on one boundary edge — the natural graph operation) and lets us write
-the entire sampler in ~150 lines of clear Python.
-"""
+"""Single-flip Metropolis MCMC over redistricting plan space."""
 
 from __future__ import annotations
 
@@ -53,11 +37,6 @@ def _within_pop_tol(
     delta_pop: float,
     pop_tol: float,
 ) -> bool:
-    """Check that flipping a node of weight `delta_pop` from `src` to `dst`
-    leaves both districts within `pop_tol` of the ideal population.
-
-    `delta_pop` is the population of the flipped node (positive number).
-    """
     ideal = _ideal_pop(p)
     new_src = p.district_pop[src] - delta_pop
     new_dst = p.district_pop[dst] + delta_pop
@@ -76,25 +55,7 @@ def run(
     seed: int = 42,
     show_progress: bool = True,
 ) -> tuple[list[Partition], MCMCStats]:
-    """Run the single-flip Metropolis chain.
-
-    Args:
-        graph: precinct adjacency graph with node attrs `pop`, `votes_d`,
-            `votes_r`.
-        seed_assignment: starting partition (e.g. from spectral bisection).
-        n_steps: number of *saved* samples to produce.
-        pop_tol: max fractional deviation from ideal district population
-            (proposal default 0.02 = ±2%).
-        lag: record one sample every `lag` accepted-or-rejected attempts after
-            burn-in.
-        burn_in: number of warmup steps before recording.
-        seed: RNG seed.
-        show_progress: tqdm progress bar.
-
-    Returns:
-        (samples, stats). `samples` is a list of immutable `Partition`s of
-        length `n_steps`. `stats` reports proposal acceptance counts.
-    """
+    """Run the single-flip Metropolis chain; returns (samples, stats)."""
     rng = random.Random(seed)
     P = MutablePartition(graph, seed_assignment)
     stats = MCMCStats()
@@ -103,9 +64,6 @@ def run(
     samples: list[Partition] = []
     saved = 0
 
-    # We sample boundary edges by reservoir over P.boundary_edges. Converting
-    # to a tuple every step would be expensive at PA scale; instead we keep a
-    # cached list and rebuild it every `rebuild_every` accepted flips.
     boundary_list: list[frozenset] = list(P.boundary_edges)
     rebuild_every = max(50, len(graph) // 20)
     flips_since_rebuild = 0
@@ -125,10 +83,7 @@ def run(
 
         src_u, src_v = P.assignment[u], P.assignment[v]
 
-        # Pick which endpoint flips so that the move *transfers population
-        # from the larger district to the smaller* — a mild restorative
-        # bias toward balance. (The endpoint that flips is the one currently
-        # in the larger district; it joins the smaller district.)
+        # flip the endpoint in the larger district — mild restorative bias toward balance
         if P.district_pop[src_u] >= P.district_pop[src_v]:
             flip_node, src, dst = u, src_u, src_v
         else:

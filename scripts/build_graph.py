@@ -1,8 +1,4 @@
-"""Build the precinct adjacency graph for a state and pickle it.
-
-Usage:
-    python scripts/build_graph.py pa
-"""
+"""Build and pickle precinct adjacency graph. Usage: python scripts/build_graph.py pa"""
 
 from __future__ import annotations
 

@@ -1,19 +1,4 @@
-"""End-to-end analysis on real MGGG shapefiles for PA, NC, MD, WI.
-
-Download data first (one-time, ~100 MB total):
-    python scripts/download_mggg_states.py all
-
-Then run:
-    python scripts/run_real_all_states.py
-
-Per-state outputs (figures committed to docs/figures/real_<state>/):
-  docs/figures/real_<state>/<state>_real_panel.png
-
-Table outputs (gitignored, in output/tables/):
-  output/tables/<state>_real_summary.csv
-  output/tables/all_states_real_summary.csv
-  output/tables/all_states_real_long.csv
-"""
+"""End-to-end analysis on real MGGG data (PA/NC/MD/WI). Usage: python scripts/run_real_all_states.py"""
 
 from __future__ import annotations
 

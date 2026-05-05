@@ -1,12 +1,4 @@
-"""Outlier analysis + figure generation for a state.
-
-Reads the ensemble metrics and baseline metrics produced by run_ensemble.py
-and writes per-metric histograms, the choropleth of the enacted plan, and
-a CSV summary table.
-
-Usage:
-    python scripts/analyze.py pa
-"""
+"""Outlier analysis + figure generation. Usage: python scripts/analyze.py pa"""
 
 from __future__ import annotations
 

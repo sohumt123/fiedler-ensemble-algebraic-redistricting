@@ -1,17 +1,4 @@
-"""Build a precinct adjacency graph from a GeoDataFrame.
-
-`build_graph(gdf)` produces a NetworkX graph where:
-- nodes are GeoDataFrame index values (typically integer precinct IDs),
-- node attributes carry `pop`, `votes_d`, `votes_r`, `district`, `centroid`,
-- edges are rook-adjacencies between polygons (shared boundary length > ε,
-  excluding bare point-touches at corners), weighted by shared border length.
-
-Preprocessing:
-- Reduce to the largest connected component.
-- Reattach island precincts to the nearest non-island precinct by centroid
-  distance, adding a synthetic edge of weight equal to the centroid distance
-  (rare for non-coastal states, but occurs in PA along Lake Erie / rivers).
-"""
+"""Build precinct adjacency graph from a GeoDataFrame."""
 
 from __future__ import annotations
 

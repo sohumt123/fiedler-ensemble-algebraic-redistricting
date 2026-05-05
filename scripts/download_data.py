@@ -1,12 +1,4 @@
-"""Download data sources for a focal state.
-
-This script tries a small set of public direct-download URLs. The
-Redistricting Data Hub requires a free login for many files; if direct
-downloads fail, the script prints clear instructions for manual download.
-
-Usage:
-    python scripts/download_data.py pa
-"""
+"""Download precinct shapefiles for a state. Usage: python scripts/download_data.py pa"""
 
 from __future__ import annotations
 

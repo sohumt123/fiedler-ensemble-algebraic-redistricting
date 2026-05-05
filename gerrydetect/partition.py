@@ -1,21 +1,7 @@
 """Partition abstractions.
 
-A `Partition` wraps a graph + node-to-district assignment and exposes
-per-district aggregates (population, vote totals, boundary edges). It is
-the single object every metric and every sampler operates on.
-
-Two flavours:
-
-- `Partition` — immutable. `flip(node, new_district)` returns a fresh
-  `Partition`. Convenient and hashable; cheap to snapshot. Use this for
-  ensemble samples.
-- `MutablePartition` — same data, but `flip()` mutates in place and updates
-  per-district aggregates incrementally in O(deg(node)). Use this inside the
-  MCMC inner loop where we propose hundreds of thousands of flips.
-
-The two are kept consistent by a single set of derivation rules; tests verify
-that `MutablePartition` matches `Partition.from_assignment(...)` after every
-operation on small graphs.
+`Partition` is immutable (flip returns a new object); `MutablePartition`
+mutates in place with O(deg) incremental updates for use in the MCMC inner loop.
 """
 
 from __future__ import annotations

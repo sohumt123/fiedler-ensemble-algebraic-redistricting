@@ -1,19 +1,4 @@
-"""MCMC convergence diagnostics.
-
-We track three quantities to evaluate whether our chain has produced a
-well-mixed sample of the plan distribution:
-
-- **Gelman-Rubin R-hat** across multiple chains. Values close to 1 (≤ 1.05
-  is the conventional threshold) indicate that within-chain and between-chain
-  variances agree.
-- **Lagged autocorrelation** of any scalar metric across one chain.
-- **Effective sample size** derived from integrated autocorrelation time.
-  ESS << N is the warning sign that our N samples really only contain a few
-  hundred effectively-independent draws.
-
-All three operate on *metric trajectories* — a 1-D array of values one of our
-metrics took at each saved sample. We never feed full partition objects in.
-"""
+"""MCMC convergence diagnostics: R-hat, autocorrelation, ESS."""
 
 from __future__ import annotations
 
@@ -21,23 +6,7 @@ import numpy as np
 
 
 def gelman_rubin(chains: np.ndarray) -> float:
-    """Brooks-Gelman R-hat for `m` chains of length `n`.
-
-    Args:
-        chains: shape (m, n). Each row is one chain's metric trajectory.
-
-    Returns:
-        R-hat. R-hat = 1.0 means the chains are statistically indistinguishable.
-
-    Formula (the simple "PSRF" form, R = 1 exactly when chains are identical):
-        B = n * Var(chain_means)               (between-chain variance)
-        W = mean(within-chain variances)
-        V_hat = W + B/n
-        R-hat = sqrt(V_hat / W)
-
-    The asymptotically equivalent (n-1)/n-corrected form is also widely used;
-    we omit it here so that R-hat = 1.0 cleanly identifies identical chains.
-    """
+    """Brooks-Gelman R-hat for m chains of length n (shape: m × n)."""
     chains = np.asarray(chains, dtype=float)
     if chains.ndim != 2:
         raise ValueError("chains must be 2-D: (n_chains, n_samples)")
@@ -84,15 +53,7 @@ def autocorrelation(series: np.ndarray, max_lag: int) -> np.ndarray:
 
 
 def effective_sample_size(series: np.ndarray, max_lag: int | None = None) -> float:
-    """Effective sample size from integrated autocorrelation time.
-
-    Uses Geyer's (1992) initial monotone sequence estimator, truncated when
-    the *sum of consecutive pairs* of autocorrelations becomes negative.
-
-    Returns:
-        ESS in [0, N]. Independent samples → ESS ≈ N. Heavily correlated
-        samples → ESS << N.
-    """
+    """ESS via Geyer's (1992) initial monotone sequence estimator."""
     x = np.asarray(series, dtype=float)
     n = len(x)
     if max_lag is None:

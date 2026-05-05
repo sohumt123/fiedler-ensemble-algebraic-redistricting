@@ -1,26 +1,4 @@
-"""Load Pennsylvania (and friends) precinct data into a GeoDataFrame.
-
-We expect raw shapefiles to live under `data/raw/<state>/`. The exact column
-names from Redistricting Data Hub VEST shapefiles vary by year; this loader
-hides the rename so the rest of the pipeline sees a clean schema.
-
-Expected schema produced by `load_state(...)`:
-
-| column     | type      | meaning                                   |
-|------------|-----------|-------------------------------------------|
-| geometry   | Polygon   | precinct polygon (projected CRS)          |
-| pop        | float     | total population                          |
-| votes_d    | float     | Democratic votes (2020 presidential)      |
-| votes_r    | float     | Republican votes (2020 presidential)      |
-| district   | int       | enacted congressional district id         |
-
-The GeoDataFrame is reindexed with a clean integer index (0..n-1) so that
-downstream code can use those indices as node IDs without worrying about
-gaps or string identifiers.
-
-Supported states (v1): "pa". Adding a new state means adding an entry to
-`STATE_LOADERS` plus a per-state column rename map.
-"""
+"""Precinct data loader for Redistricting Data Hub VEST shapefiles."""
 
 from __future__ import annotations
 

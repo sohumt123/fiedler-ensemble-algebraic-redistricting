@@ -1,15 +1,4 @@
-"""Plotting helpers.
-
-Three building blocks:
-
-- `plot_histogram` — ensemble histogram of a metric with the enacted-plan
-  value drawn as a vertical red line and a p-value annotation.
-- `plot_district_map` — choropleth coloring precincts by their assigned
-  district. Used both for the enacted plan and for representative ensemble
-  draws.
-- `plot_seats_votes` — overlay of seats-votes curves: enacted plan in bold,
-  ensemble in light grey.
-"""
+"""Plotting helpers: histogram, district map, seats-votes curve."""
 
 from __future__ import annotations
 

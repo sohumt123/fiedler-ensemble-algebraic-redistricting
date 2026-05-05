@@ -1,16 +1,4 @@
-"""Run the full PA analysis with mst_diameter included in the ensemble.
-
-The optimized _kruskal_mst (node-iteration edge collection) makes this feasible
-for PA (~9K VTDs, 18 districts, 900-plan ensemble).
-
-Usage:
-    python scripts/run_mst_pa.py
-
-Outputs (overwrite PA files only):
-    docs/figures/real_pa/pa_real_panel.png   (updated, MST in summary table)
-    output/tables/pa_real_long.csv           (5 metrics, including mst_diameter)
-    output/tables/pa_mst_summary.csv         (MST-specific outlier result)
-"""
+"""PA analysis with 5 metrics including MST diameter. Usage: python scripts/run_mst_pa.py"""
 
 from __future__ import annotations
 

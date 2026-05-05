@@ -1,12 +1,4 @@
-"""Run the full MD analysis with mst_diameter included in the ensemble.
-
-Usage:
-    python scripts/run_mst_md.py
-
-Outputs:
-    docs/figures/real_md/md_real_panel.png   (updated, MST in summary table)
-    output/tables/md_real_long.csv           (5 metrics, including mst_diameter)
-"""
+"""MD analysis with 5 metrics including MST diameter. Usage: python scripts/run_mst_md.py"""
 
 from __future__ import annotations
 

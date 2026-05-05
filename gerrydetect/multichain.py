@@ -1,20 +1,4 @@
-"""Multi-chain MCMC runner with mixing diagnostics.
-
-Single-chain MCMC inference rests on a leap of faith: that the chain has
-explored a representative region of the plan space. Running multiple chains
-from independent random seeds and comparing them gives us a way to *test*
-that assumption rather than assume it. If two chains land in completely
-different parts of the plan space, R-hat for any metric will be large and
-we know the single-chain answer is unreliable.
-
-Key idea — every method on `MultiChainResult` accepts a metric function and
-returns a per-chain × per-sample value array. From those arrays we derive:
-
-- `metric_trajectories(fn)` → shape (n_chains, n_samples)
-- `rhat(fn)` → R-hat across chains
-- `effective_sample_size(fn)` → ESS pooled across chains
-- `pooled_samples()` → all chains concatenated for ensemble-level analysis
-"""
+"""Multi-chain MCMC runner with R-hat and ESS diagnostics."""
 
 from __future__ import annotations
 

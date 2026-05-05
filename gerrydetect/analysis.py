@@ -1,13 +1,4 @@
-"""Outlier analysis: where does the enacted plan fall in the ensemble?
-
-Given (a) the enacted partition's metric values and (b) the metric values
-across an ensemble of plans, we report:
-
-- Per-metric percentile / two-sided p-value.
-- A composite "gerrymandering severity" score that aggregates p-values
-  across metrics, signed by the gerrymander direction (positive = R-favoring,
-  negative = D-favoring).
-"""
+"""Outlier analysis: percentile, p-value, and composite severity score."""
 
 from __future__ import annotations
 

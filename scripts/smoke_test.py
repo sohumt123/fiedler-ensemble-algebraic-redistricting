@@ -1,20 +1,4 @@
-"""Smoke test for the full pipeline on a synthetic state.
-
-Constructs a 10×10 grid "state" with 100 precincts, random populations and
-vote shares, then runs:
-
-    spectral_bisect → 4 districts
-    MCMC ensemble (200 samples, very short burn-in)
-    metrics on every sample
-    outlier analysis vs. the spectral baseline (treated as "enacted")
-    one histogram figure
-
-End-to-end runtime: well under a minute. This is what tests/CI would actually
-exercise; pytest covers individual pieces.
-
-Usage:
-    python scripts/smoke_test.py
-"""
+"""Full-pipeline smoke test on a tiny synthetic state. Usage: python scripts/smoke_test.py"""
 
 from __future__ import annotations
 

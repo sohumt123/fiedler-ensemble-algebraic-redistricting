@@ -1,17 +1,4 @@
-"""Download the MGGG PA VTD shapefile (publicly available, no login).
-
-Source: https://github.com/mggg-states/PA-shapefiles
-License: MIT (see LICENSE.md in that repo)
-
-This shapefile contains:
-  - 2010 census VTDs (Voting Tabulation Districts) for Pennsylvania
-  - 2010 decennial census demographics (TOTPOP, VAP, racial breakdowns)
-  - Election results: 2010, 2012, 2014, 2016 (governor, president, senate, AG)
-  - Enacted district assignments: 2011 CD, 2018 remedial CD, 538 plans
-
-Usage:
-    python scripts/download_mggg_pa.py
-"""
+"""Download MGGG PA VTD shapefile from GitHub (MIT license). Usage: python scripts/download_mggg_pa.py"""
 
 from __future__ import annotations
 

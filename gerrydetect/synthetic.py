@@ -1,20 +1,4 @@
-"""Synthetic state generator.
-
-Produces a `networkx.Graph` whose structure mimics a real precinct adjacency
-graph: planar (Delaunay-triangulated point set), variable-density
-(urban centers + rural fringe), and politically clustered (urban-D,
-rural-R gradient with per-precinct noise).
-
-We use this for two purposes:
-
-1. **Demonstration.** Real shapefile data requires login-gated downloads
-   from the Redistricting Data Hub. The synthetic states give us a
-   reproducible, redistributable example of the full pipeline.
-2. **Method validation.** When we control the generative process we know
-   the "true" gerrymandering signal — useful for verifying that our
-   metrics + sampler actually pick out the partisan asymmetries we built
-   in.
-"""
+"""Synthetic precinct graph generator (Delaunay triangulation + partisan gradient)."""
 
 from __future__ import annotations
 

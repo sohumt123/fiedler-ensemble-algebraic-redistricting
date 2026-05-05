@@ -1,21 +1,4 @@
-"""Recursive spectral bisection.
-
-The classic graph-partitioning recipe: build the graph Laplacian L = D - A,
-take the eigenvector corresponding to the second-smallest eigenvalue (the
-"Fiedler vector"), and split nodes into two halves by the sign / order of
-their Fiedler-vector entries. To get k pieces, recurse: bisect, then bisect
-each half, etc.
-
-We use SciPy's sparse eigensolver (`eigsh` with `which='SM'`, the
-shift-invert variant) — implementing Lanczos by hand is out of scope for
-NETS 1500 — but everything else is ours: the partition refinement to balance
-population, the contiguity repair, the recursion strategy.
-
-This is the deterministic baseline plan in the proposal: it produces a
-single high-quality compact partition that we use as the seed for the MCMC
-chain (rather than a random initial partition, which would need a long
-burn-in to escape).
-"""
+"""Recursive spectral bisection via the Fiedler vector into k population-balanced pieces."""
 
 from __future__ import annotations
 
@@ -34,15 +17,7 @@ log = logging.getLogger(__name__)
 
 
 def fiedler_vector(graph: nx.Graph, nodes: list[NodeId] | None = None) -> np.ndarray:
-    """Compute the Fiedler vector (eigenvector for the 2nd-smallest
-    eigenvalue) of the graph Laplacian on the subgraph induced by `nodes`.
-
-    Returns an array indexed by `nodes` order.
-
-    For small subgraphs (n < 1500) we use NumPy's dense `eigh` — deterministic
-    and exact. For large subgraphs we use SciPy's sparse Lanczos solver with
-    a fixed initial vector for reproducibility.
-    """
+    """Fiedler vector of the graph Laplacian on the subgraph induced by `nodes`."""
     if nodes is None:
         nodes = list(graph.nodes)
     sub = graph.subgraph(nodes)
@@ -99,17 +74,7 @@ def _balanced_split_indices(
     populations: np.ndarray,
     target_left_fraction: float = 0.5,
 ) -> np.ndarray:
-    """Find the Fiedler-ordered cut index that puts approximately
-    `target_left_fraction` of the population in the "low" half.
-
-    Returns the boolean mask telling which nodes go in the "low" half.
-
-    Using a fraction instead of always 50/50 lets recursive bisection
-    handle non-power-of-2 district counts cleanly: when we still need to
-    create `k_total` districts from this piece and the left subtree will
-    become `k_left` of them, the cut should put `k_left/k_total` of the
-    population on the left.
-    """
+    """Boolean mask putting ~`target_left_fraction` of population in the low-Fiedler half."""
     order = np.argsort(fiedler)
     sorted_pop = populations[order]
     cumulative = np.cumsum(sorted_pop)

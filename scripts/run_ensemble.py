@@ -1,16 +1,4 @@
-"""Run the spectral baseline + MCMC ensemble for a state.
-
-Usage:
-    python scripts/run_ensemble.py pa --n 1000 --lag 100 --burn-in 10000
-
-Writes to data/ensembles/<state>_*.parquet:
-  - assignments per saved plan (one row per plan, one column per node)
-  - per-plan metric values (one row per plan, one column per metric)
-
-The seed partition is the recursive spectral bisection of the precinct
-graph (k = number of districts in the enacted plan), so the chain starts
-from a population-balanced compact baseline.
-"""
+"""Spectral baseline + MCMC ensemble for a state. Usage: python scripts/run_ensemble.py pa"""
 
 from __future__ import annotations
 

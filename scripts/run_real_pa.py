@@ -1,26 +1,4 @@
-"""End-to-end analysis of real Pennsylvania redistricting data.
-
-Uses the MGGG PA VTD shapefile (real precincts, real elections, real enacted
-district plans) to run the exact same pipeline that `run_full_analysis.py`
-runs on synthetic data.
-
-This script:
-  1. Loads real PA VTDs (~9000 precincts) from MGGG data
-  2. Builds the precinct adjacency graph
-  3. Computes the spectral bisection baseline plan (Fiedler vector)
-  4. Runs multi-chain MCMC to generate the ensemble null distribution
-  5. Computes compactness + partisan metrics on every plan
-  6. Tests the real enacted plan as an outlier vs. the ensemble
-  7. Produces figures + tables
-
-Data source: https://github.com/mggg-states/PA-shapefiles (MIT license)
-  - 2010 Census VTDs with demographics
-  - 2016 Presidential election returns
-  - 2018 Remedial Congressional District plan (the "enacted" plan)
-
-Usage:
-    python scripts/run_real_pa.py
-"""
+"""End-to-end real PA redistricting analysis. Usage: python scripts/run_real_pa.py"""
 
 from __future__ import annotations
 

@@ -1,12 +1,4 @@
-"""Run the full NC analysis with mst_diameter included in the ensemble.
-
-Usage:
-    python scripts/run_mst_nc.py
-
-Outputs:
-    docs/figures/real_nc/nc_real_panel.png   (updated, MST in summary table)
-    output/tables/nc_real_long.csv           (5 metrics, including mst_diameter)
-"""
+"""NC analysis with 5 metrics including MST diameter. Usage: python scripts/run_mst_nc.py"""
 
 from __future__ import annotations
 

@@ -1,19 +1,4 @@
-"""Compactness and partisan-fairness metrics on a `Partition`.
-
-All metrics take a `Partition` (or `MutablePartition`) and return a scalar
-or a small structured value. Geometric metrics additionally require a
-GeoDataFrame indexed by node ID; if not provided they raise.
-
-The graph-theoretic metrics (cut ratio, MST diameter, modularity) are written
-from scratch — Kruskal for MST, two-BFS for tree diameter, the Newman-Girvan
-formula spelled out term by term. The geometric metrics (Polsby-Popper, Reock)
-delegate the polygon math to shapely but the per-district aggregation logic
-is ours.
-
-Partisan metrics implement the standard definitions used in the gerrymandering
-literature: Stephanopoulos & McGhee's efficiency gap, McDonald & Best's
-mean-median, and a uniform-partisan-swing seats-votes curve.
-"""
+"""Compactness and partisan-fairness metrics on a Partition."""
 
 from __future__ import annotations
 

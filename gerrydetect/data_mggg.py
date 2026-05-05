@@ -1,13 +1,4 @@
-"""Load MGGG-format state VTD shapefiles into the gerrydetect pipeline.
-
-Supported states (all MIT-licensed, publicly available on GitHub — no login):
-  PA — https://github.com/mggg-states/PA-shapefiles
-  NC — https://github.com/mggg-states/NC-shapefiles
-  MD — https://github.com/mggg-states/MD-shapefiles
-  WI — https://github.com/mggg-states/WI-shapefiles
-
-Column names sourced from each repo's README / data dictionary.
-"""
+"""MGGG state VTD shapefile loaders (PA, NC, MD, WI)."""
 
 from __future__ import annotations
 

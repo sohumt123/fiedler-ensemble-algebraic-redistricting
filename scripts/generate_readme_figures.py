@@ -1,12 +1,4 @@
-"""Generate the figures embedded in the README.
-
-Runs the full pipeline on a synthetic state (no real data needed) and writes
-four publication-quality figures to docs/figures/. Re-run any time the
-pipeline changes; the README always shows what the current code produces.
-
-Usage:
-    python scripts/generate_readme_figures.py
-"""
+"""Generate pipeline figures for docs/. Usage: python scripts/generate_readme_figures.py"""
 
 from __future__ import annotations
 

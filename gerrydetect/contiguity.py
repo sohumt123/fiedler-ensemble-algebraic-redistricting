@@ -1,17 +1,4 @@
-"""Contiguity checks for districting plans.
-
-A redistricting plan is *valid* only if each district induces a connected
-subgraph of the precinct adjacency graph. This module provides:
-
-- `is_district_connected(graph, nodes)` — generic BFS-based connectedness
-  check on an arbitrary node subset.
-- `is_district_connected_after_flip(P, node, new_district)` — fast variant
-  used inside the MCMC inner loop. Checks whether removing `node` from its
-  current district leaves that district connected. (We never check the
-  *destination* district because adding `node` can only connect things, never
-  disconnect them — and the destination already neighbors `node` since we
-  only flip across boundary edges.)
-"""
+"""BFS-based district contiguity checks."""
 
 from __future__ import annotations
 
