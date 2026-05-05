@@ -1,0 +1,14 @@
+{
+  "run_timestamp": "2026-05-05 14:03:31",
+  "states_completed": [
+    "PA",
+    "NC",
+    "MD",
+    "WI"
+  ],
+  "n_chains": 3,
+  "n_steps_per_chain": 300,
+  "lag": 30,
+  "burn_in": 3000,
+  "pop_tol": 0.05
+}
