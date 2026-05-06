@@ -58,3 +58,11 @@ docs/figures/   committed output figures
 data/           gitignored raw and processed data
 output/         gitignored figures and tables
 ```
+
+
+Datasets: 
+
+Pennsylvania: https://github.com/mggg-states/PA-shapefiles
+North Carolina: https://github.com/mggg-states/NC-shapefiles
+Maryland: https://github.com/mggg-states/MD-shapefiles
+Wisconsin: https://github.com/mggg-states/WI-shapefiles
