@@ -26,7 +26,7 @@ FiedlerEnsemble is a computational tool for detecting gerrymandering in U.S. con
 
 ## AI Usage
 
-Claude Code (Anthropic) was used mostly as a coding assistant. Specifically: Claude wrote and debugged the MST diameter optimization (replacing Kruskal's algorithm with a direct two-BFS subgraph diameter approach, achieving a 170x speedup on Pennsylvania's 9,253-precinct graph), helped author the LaTeX report sections on results and conclusions, assisted with the multi-state MCMC pipeline scripts, and helped identify and fix bugs in the partition aggregation and boundary-edge update logic. All algorithmic ideas, experimental design, and interpretation of results were done by the team; Claude was used to accelerate implementation and writing.
+Claude Code (Anthropic) was used mostly as a coding assistant. Specifically: Claude wrote and debugged the MST diameter optimization (replacing Kruskal's algorithm with a direct two-BFS subgraph diameter approach, achieving a 170x speedup on Pennsylvania's 9,253-precinct graph), helped visualize results for the report, assisted with the multi-state MCMC pipeline scripts, and helped identify and fix bugs in the partition aggregation and boundary-edge update logic. All algorithmic ideas, experimental design, and interpretation of results were done by the team; Claude was used to accelerate implementation and writing.
 
 ## Pipeline
 
