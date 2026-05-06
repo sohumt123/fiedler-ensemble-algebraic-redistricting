@@ -1,238 +1,60 @@
-# FiedlerEnsemble — Algebraic Redistricting + MCMC Outlier Detection
+# FiedlerEnsemble: Using Math to Detect Gerrymandering
 
+Sohum Trivedi, Ronit Kapoor, Aditi Ghosh, Maurya Bonu
+NETS 1500, Spring 2026
 
-Sohum Trivedi · Ronit Kapoor · Aditi Ghosh · Maurya Bonu
+---
 
------------------------------------------------------------------------------
-Recursive spectral bisection via the **Fiedler vector** (the eigenvector of
-the second-smallest Laplacian eigenvalue) gives the deterministic baseline
-plan; a single-flip **Metropolis–Hastings MCMC** sampler over precinct
-adjacency graphs gives the ensemble null distribution. Enacted plans are
-scored against the ensemble for compactness (cut-edge ratio, Newman–Girvan
-modularity, MST diameter, Polsby–Popper, Reock) and partisan-fairness
-(efficiency gap, mean–median, seats–votes) metrics.
+## Project Description
 
-Focal states (in order of analysis): **Pennsylvania, North Carolina,
-Wisconsin, Ohio, Maryland.**
+FiedlerEnsemble is a computational tool for detecting gerrymandering in U.S. congressional district maps using graph algorithms and statistical inference. We model each state as a precinct adjacency graph, where voting precincts are nodes and shared borders are edges, then generate an ensemble of thousands of neutral random maps using a Metropolis-Hastings Markov chain Monte Carlo sampler. Each map is scored on five metrics covering compactness and partisan fairness, producing a null distribution against which the real enacted map is tested as a statistical outlier. We apply this pipeline to four states with real precinct shapefiles and 2016 Presidential election returns from the Metric Geometry and Gerrymandering Group: Pennsylvania, North Carolina, Maryland, and Wisconsin. Our results quantify, with p-values and bootstrap confidence intervals, which maps are statistically anomalous and in which direction.
 
-The project features a **real-world empirical analysis** pipeline utilizing public VTD data for Pennsylvania from MGGG, as well as a pure-algorithmic validation pipeline using synthetic states.
+## Concepts Covered
 
-The full design lives in
-[`docs/specs/2026-04-28-gerrymandering-detection-design.md`](docs/specs/2026-04-28-gerrymandering-detection-design.md).
+**Choice 1: Graphs and Graph Algorithms.** The core of the project. We build precinct adjacency graphs from geographic shapefiles and implement spectral partitioning (Fiedler vector bisection), minimum spanning tree diameter, Newman-Girvan modularity, BFS-based contiguity checking, and single-flip Metropolis MCMC entirely from scratch. NetworkX handles graph storage; all algorithms are hand-written.
+
+**Choice 2: Social Networks.** Precinct adjacency networks exhibit community structure and homophily (neighboring precincts tend to share demographics and partisan lean). Gerrymandering is modeled as deliberate manipulation of community boundaries, and our modularity metric directly measures how well district boundaries respect natural graph communities.
+
+**Choice 6: Game Theory, Auctions, Matching Markets.** Gerrymandering is a strategic optimization game: mapmakers maximize their party's seat count by manipulating district boundaries. The efficiency gap metric directly connects to mechanism design and fair outcome design, measuring the structural advantage one party gains through the allocation of wasted votes across districts.
+
+## Work Breakdown
+
+- **Sohum Trivedi:** Pipeline architecture, MCMC ensemble generation, spectral partitioning implementation, and outlier analysis.
+- **Ronit Kapoor:** Data acquisition and cleaning (shapefiles, election returns, population data), graph construction, and preprocessing.
+- **Aditi Ghosh:** Compactness and partisan fairness metric implementation, statistical analysis, and seats-votes curve generation.
+- **Maurya Bonu:** Geographic and histogram visualizations, report writing, and final presentation preparation.
+
+## AI Usage
+
+Claude Code (Anthropic) was used extensively throughout this project as a coding assistant. Specifically: Claude wrote and debugged the MST diameter optimization (replacing Kruskal's algorithm with a direct two-BFS subgraph diameter approach, achieving a 170x speedup on Pennsylvania's 9,253-precinct graph), helped author the LaTeX report sections on results and conclusions, assisted with the multi-state MCMC pipeline scripts, and helped identify and fix bugs in the partition aggregation and boundary-edge update logic. All algorithmic ideas, experimental design, and interpretation of results were done by the team; Claude was used to accelerate implementation and writing.
 
 ## Pipeline
 
 ![pipeline](docs/figures/pipeline.png)
 
-Raw shapefiles + election returns become a precinct adjacency graph; the
-graph is partitioned (deterministically by spectral bisection, stochastically
-by single-flip MCMC); each partition is scored by compactness and
-partisan-fairness metrics; the enacted plan's metric values are compared
-against the ensemble distribution to produce p-values.
-
-## What's implemented
-
-The Python package (imported as `gerrydetect` for compatibility) is
-from-scratch — no GerryChain dependency. Every graph algorithm
-(spectral bisection via Fiedler vector, Newman–Girvan modularity,
-Kruskal MST + two-BFS diameter, BFS contiguity, single-flip Metropolis
-MCMC, efficiency gap, mean–median, seats–votes, R-hat, autocorrelation,
-ESS) is written by hand. NetworkX is the graph container, SciPy provides
-sparse eigensolvers, and geopandas/shapely handle shapefile I/O — none
-of those do any of the algorithmic work.
-
-| Module | Responsibility |
-| --- | --- |
-| `gerrydetect.partition` | `Partition` / `MutablePartition` — the central abstraction |
-| `gerrydetect.contiguity` | BFS-based district connectedness check |
-| `gerrydetect.graph` | Build the precinct adjacency graph from a GeoDataFrame |
-| `gerrydetect.data_mggg` | Load real-world VTD shapefiles (e.g. MGGG PA data) |
-| `gerrydetect.data` | Load placeholder shapefiles |
-| `gerrydetect.synthetic` | Reproducible synthetic state generator (Delaunay-triangulated, urban-rural gradient) |
-| `gerrydetect.metrics` | Cut ratio, MST diameter, modularity, Polsby–Popper, Reock, efficiency gap, mean–median, seats–votes |
-| `gerrydetect.spectral` | Proportional recursive spectral bisection (Fiedler vector) |
-| `gerrydetect.mcmc` | Single-flip Metropolis ensemble sampler |
-| `gerrydetect.multichain` | Multi-chain runner with per-metric R-hat / ESS |
-| `gerrydetect.diagnostics` | Gelman–Rubin R-hat, lagged autocorrelation, effective sample size |
-| `gerrydetect.analysis` | Outlier p-values, bootstrap CIs, composite severity score |
-| `gerrydetect.viz` | Histograms, district choropleth maps, seats–votes plots |
-
-**Test coverage:** 61 unit tests covering metric correctness on
-hand-computed graphs, partition invariants, MCMC step-by-step
-contiguity/population preservation, spectral balance for arbitrary k,
-diagnostic correctness against known sampling distributions, and
-synthetic-state structural properties. Test-driven development was used
-for the diagnostics, multi-chain runner, synthetic generator, and
-bootstrap confidence intervals.
-
-## Real Data Empirical Analysis: Pennsylvania
-
-We analyzed the **2018 Remedial Congressional District Plan** for Pennsylvania using real VTD shapefiles from MGGG.
-
-To run the analysis:
-```bash
-# Download the real PA VTD data
-python scripts/download_mggg_pa.py
-
-# Run the Fiedler vector and multi-chain MCMC against the enacted plan
-python scripts/run_real_pa.py
-```
-This produces the 8-panel diagnostic figure `output/figures/real_pa/pa_real_panel.png` showing the statistical distribution of map metrics, proving the 2018 plan is a significant outlier in compactness and fairness.
-
-## Synthetic Five-state results
-
-`scripts/run_full_analysis.py` runs the full pipeline on synthetic versions
-of all five focal states (Pennsylvania, North Carolina, Wisconsin, Ohio,
-Maryland) — generating each state with `gerrydetect.synthetic.make_synthetic_state`,
-constructing a deliberately gerrymandered "enacted" plan via boundary-edge
-swaps that pack opposition voters into a few districts, running 3-chain
-single-flip MCMC against a spectral-bisection seed, and computing every
-compactness/partisan metric on every plan. Outputs land in `output/figures/`
-(per-state 6-panel figures) and `output/tables/` (per-state and cross-state
-CSV summaries). On a laptop the entire 5-state run takes ~10 minutes.
-
-Why synthetic? The Redistricting Data Hub gates real-state shapefiles
-behind a free login; the synthetic generator makes the demonstration
-reproducible from seed. The pipeline itself is identical for real data —
-swap `make_synthetic_state` for `gerrydetect.data.load_state` and run.
-
-### Example: Pennsylvania (k = 17 districts, 1700 precincts, 900-plan ensemble)
-
-![PA panel](docs/figures/states/pa_panel.png)
-
-The remaining four state panels are also tracked in
-[`docs/figures/states/`](docs/figures/states/) — `nc_panel.png`,
-`wi_panel.png`, `oh_panel.png`, `md_panel.png`. They share the same
-6-panel layout.
-
-The two left panels are the deliberately gerrymandered "enacted" plan
-(top, with R-favoring pack-and-crack) versus the spectral baseline
-(middle). The histograms compare those two plans' metrics against the
-MCMC ensemble; the bottom-right shows seats–votes curves with the
-gerrymandered plan visibly less symmetric than the spectral baseline.
-
-### Pipeline reference: synthetic 14×14 toy state
-
-Smaller-scale illustrations (generated by `scripts/generate_readme_figures.py`)
-that show the same machinery on a 196-precinct grid for the visually
-inclined:
-
-![histograms panel](docs/figures/histograms_panel.png)
-
-![district maps](docs/figures/district_maps.png)
-
-![seats votes](docs/figures/seats_votes.png)
+Raw shapefiles and election returns become a precinct adjacency graph. The graph is partitioned deterministically by spectral bisection and stochastically by single-flip MCMC. Each partition is scored by compactness and partisan-fairness metrics. The enacted plan's metric values are compared against the ensemble distribution to produce p-values.
 
 ## Setup
 
 ```bash
-# Python 3.11+ required.
-python -m venv .venv
-source .venv/bin/activate
+python -m venv .venv && source .venv/bin/activate
 pip install -e ".[dev]"
+
+# Download real shapefiles (PA, NC, MD, WI)
+python scripts/download_mggg_states.py all
+
+# Run full analysis
+python scripts/run_real_all_states.py
 ```
 
-Or with `uv`:
-
-```bash
-uv venv && source .venv/bin/activate
-uv pip install -e ".[dev]"
-```
-
-## Reproducing every figure and table in this repo
-
-```bash
-# Quick smoke test — pipeline on a 10×10 grid, < 1 minute.
-python scripts/smoke_test.py
-
-# Five-state analysis — synthetic PA / NC / WI / OH / MD, ~10 minutes.
-python scripts/run_full_analysis.py
-
-# Smaller "toy state" reference figures embedded in this README.
-python scripts/generate_readme_figures.py
-```
-
-After `run_full_analysis.py`:
-
-- `output/figures/<state>_panel.png` — 6-panel per-state report figure
-- `output/tables/<state>_summary.csv` — per-metric outlier stats with
-  bootstrap CIs and per-metric R-hat / ESS
-- `output/tables/all_states_summary.csv` — cross-state ranking by composite
-  severity
-- `output/tables/all_states_long.csv` — every (state, metric) row in long form
-
-## Running on real Pennsylvania data
-
-1. Download PA precinct shapefile + 2020 election results, ACS population, and
-   the enacted congressional district shapefile. URLs and instructions live in
-   `scripts/download_data.py` (sources: Redistricting Data Hub VEST 2020 PA,
-   ACS 5-year via `census.gov`, RDH enacted PA congressional plan).
-
-   ```bash
-   python scripts/download_data.py pa
-   ```
-
-   Files land in `data/raw/pa/`. (This step is gitignored — each user fetches
-   their own copy.)
-
-2. Build the precinct graph:
-
-   ```bash
-   python scripts/build_graph.py pa
-   ```
-
-   Produces `data/processed/pa_graph.pkl` and `data/processed/pa_precincts.parquet`.
-
-3. Run the ensemble (spectral seed + MCMC):
-
-   ```bash
-   python scripts/run_ensemble.py pa --n 1000 --lag 100 --burn-in 10000
-   ```
-
-   Writes `data/ensembles/pa_mcmc.parquet` (assignments) and
-   `data/ensembles/pa_mcmc_metrics.parquet` (per-plan metrics).
-
-4. Outlier analysis and figures:
-
-   ```bash
-   python scripts/analyze.py pa
-   ```
-
-   Writes histograms and maps to `output/figures/`, summary table to
-   `output/tables/pa_summary.csv`.
-
-## Tests
-
-```bash
-pytest
-```
-
-Unit tests cover hand-computed metrics on small graphs, partition invariants,
-spectral bisection on synthetic planar graphs, and MCMC step-by-step
-contiguity/population invariants.
-
-## Repo layout
+## Repo Layout
 
 ```
-gerrydetect/        # importable Python package
-scripts/            # CLI entry points
-tests/              # pytest unit tests
-notebooks/          # exploratory + walkthrough
-report/             # LaTeX final report scaffold
-data/               # gitignored — raw, processed, ensembles
-output/             # gitignored — figures, tables
-docs/specs/         # design specs
-docs/figures/       # README figures (committed)
+gerrydetect/    importable Python package (all algorithms hand-written)
+scripts/        CLI entry points for data download and analysis
+tests/          pytest unit tests (61 tests)
+report/         LaTeX report
+docs/figures/   committed output figures
+data/           gitignored raw and processed data
+output/         gitignored figures and tables
 ```
-
-## Team responsibilities
-
-- **Sohum** — pipeline architecture, MCMC, spectral bisection, outlier analysis
-- **Ronit** — data acquisition, graph construction, preprocessing
-- **Aditi** — metrics, statistical analysis, seats–votes curves
-- **Maurya** — visualization, report writing, presentation
-
-## License
-All datasets used are public-domain or permissively licensed (Census Bureau
-TIGER/Line, Redistricting Data Hub VEST, MIT Election Data + Science Lab,
-American Community Survey). Attributions in the final report.
